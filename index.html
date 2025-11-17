@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Math Flashcards - Prime Factors</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Fixed Header */
+    .progress-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;  
+      background: white;
+      padding: 12px 20px !important;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      z-index: 100;
+      pointer-events: none;
+    }
+    
+    .progress-header * {
+      pointer-events: auto;
+    }
+
+    .progress-title {
+      font-family: 'Crimson Text', serif;
+      font-size: 24px !important;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 10px !important;
+      letter-spacing: -0.09em;
+    }
+
+    .progress-stats {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px !important;
+      flex-wrap: wrap;
+      margin-bottom: 8px !important;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px !important;
+    }
+
+    .stat-icon {
+      width: 20px !important;
+      height: 20px !important;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 12px !important;
+    }
+
+    .stat-icon.mastered { background: #54d3ab; color: white; }
+    .stat-icon.practice { background: #f7b84b; color: white; }
+    .stat-icon.needs-practice { background: #e16280; color: white; }
+    .stat-icon.not-rated { background: #cbd5e1; color: white; }
+
+    .progress-bar-container {
+      max-width: 800px;
+      margin: 0 auto;
+      height: 6px !important;
+      background: #e2e8f0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: #1d7fe2;
+      border-radius: 10px;
+      transition: width 0.5s ease;
+    }
+
+    .main-content {
+      margin-top: 0 !important;
+      padding-top: 90px !important;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      width: 100%;
+      padding-left: 10px !important;
+      padding-right: 10px !important;
+      padding-bottom: 20px !important;
+      overflow-y: auto;
+    }
+
+    /* CRITICAL FLASHCARD SIZING - DESKTOP */
+    .flashcard-container {
+      width: 100% !important;
+      max-width: 850px !important;
+      margin: 0 auto 0 auto !important;
+      perspective: 1000px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    .flashcard-wrapper {
+      position: relative;
+      width: 100% !important;
+      max-width: 850px !important;
+      height: 450px !important;
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+      cursor: pointer;
+    }
+
+    /* Smooth swipe animation states - NO FLASHING */
+    .swipe-left {
+      animation: swipeLeft 0.35s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+    }
+    .swipe-right {
+      animation: swipeRight 0.35s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+    }
+
+    @keyframes swipeLeft {
+      0% { 
+        transform: translateX(0) scale(1); 
+        opacity: 1;
+      }
+      100% { 
+        transform: translateX(-120%) scale(0.8); 
+        opacity: 0;
+      }
+    }
+
+    @keyframes swipeRight {
+      0% { 
+        transform: translateX(0) scale(1); 
+        opacity: 1;
+      }
+      100% { 
+        transform: translateX(120%) scale(0.8); 
+        opacity: 0;
+      }
+    }
+
+    /* Incoming card animation - slides in from opposite side */
+    .swipe-in-left {
+      animation: swipeInLeft 0.35s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+    }
+    .swipe-in-right {
+      animation: swipeInRight 0.35s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+    }
+
+    @keyframes swipeInLeft {
+      0% { 
+        transform: translateX(120%) scale(0.8); 
+        opacity: 0;
+      }
+      100% { 
+        transform: translateX(0) scale(1); 
+        opacity: 1;
+      }
+    }
+
+    @keyframes swipeInRight {
+      0% { 
+        transform: translateX(-120%) scale(0.8); 
+        opacity: 0;
+      }
+      100% { 
+        transform: translateX(0) scale(1); 
+        opacity: 1;
+      }
+    }
+
+    .flashcard-wrapper.flipped { transform: rotateY(180deg); }
+
+    /* CRITICAL: Hide card during content update */
+    .flashcard-wrapper.updating {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .flashcard {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 16px;
+      padding: 40px !important;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    }
+
+    .flashcard-front { background: white; }
+    .flashcard-back {
+      background: #1d7fe2;
+      color: white;
+      transform: rotateY(180deg);
+    }
+
+    .card-label {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #64748b;
+    }
+
+    .flashcard-back .card-label { color: rgba(255,255,255,0.8); }
+
+    .card-number {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #1d7fe2;
+      background: #eef6ff;
+      padding: 6px 12px;
+      border-radius: 20px;
+    }
+
+    .flashcard-back .card-number {
+      background: rgba(255,255,255,0.2);
+      color: white;
+    }
+
+    /* CRITICAL TEXT SIZING - DESKTOP */
+    .card-content {
+      font-size: 24px !important;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.5;
+      max-width: 90%;
+    }
+
+    .flashcard-back .card-content {
+      font-size: 32px !important;
+      font-weight: 600;
+    }
+
+    .tap-hint {
+      position: absolute;
+      bottom: 20px;
+      font-size: 13px;
+      color: #94a3b8;
+      font-style: italic;
+    }
+
+    .flashcard-back .tap-hint { color: rgba(255,255,255,0.7); }
+
+    /* BUTTON CONTAINER - HOLDS BOTH MEMBERS LOUNGE AND RATING BUTTONS */
+    .button-group {
+      max-width: 900px !important;
+      width: 100% !important;
+      margin: 40px auto 8px auto !important;
+      display: flex !important;
+      flex-wrap: nowrap !important;
+      gap: 12px !important;
+      justify-content: center !important;
+      align-items: center !important;
+      padding: 0 20px !important;
+    }
+
+    /* Members Lounge Button - TREATED EXACTLY LIKE RATING BUTTONS */
+    .members-lounge-btn {
+      flex: 0 0 auto !important;
+      min-width: 180px !important;
+      padding: 16px 20px !important;
+      border-radius: 12px !important;
+      text-decoration: none !important;
+      font-family: 'Crimson Text', serif !important;
+      font-weight: 700 !important;
+      font-size: 14px !important;
+      border: 2px solid #000000 !important;
+      background-color: #ffffff !important;
+      color: #000000 !important;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15) !important;
+      cursor: pointer !important;
+      transition: all 0.3s ease !important;
+      text-align: center !important;
+      display: inline-block !important;
+      white-space: nowrap !important;
+      position: relative !important;
+      order: 0 !important;
+    }
+
+    .members-lounge-btn:hover {
+      background-color: #f0f0f0 !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    }
+
+    .members-arrow {
+      margin-right: 6px !important;
+      font-size: 14px !important;
+      vertical-align: middle !important;
+    }
+
+    /* Rating Buttons - IDENTICAL STYLING */
+    .rating-btn {
+      flex: 1 1 auto !important;
+      min-width: 80px !important;
+      max-width: 250px !important;
+      padding: 16px 20px !important;
+      border: 2px solid;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 24px !important;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      background: white;
+      order: 1 !important;
+    }
+
+    .rating-btn.needs-practice { border-color: #e16280; color: #e16280; }
+    .rating-btn.practice { border-color: #f7b84b; color: #f7b84b; }
+    .rating-btn.mastered { border-color: #54d3ab; color: #54d3ab; }
+
+    .rating-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .rating-btn.needs-practice:hover { background: #e16280; color: white; }
+    .rating-btn.practice:hover { background: #f7b84b; color: white; }
+    .rating-btn.mastered:hover { background: #54d3ab; color: white; }
+
+    .nav-buttons {
+      max-width: 600px;
+      margin: 24px auto !important;
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+    }
+
+    @media (max-width: 1024px) {
+      .nav-buttons {
+        display: none !important;
+      }
+    }
+
+    .nav-btn {
+      padding: 12px 24px;
+      background: #1d7fe2;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .nav-btn:hover {
+      background: #1667b8;
+      transform: translateY(-2px);
+    }
+
+    .nav-btn:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* CRITICAL MOBILE SIZING - OVERRIDES EVERYTHING */
+    @media (max-width: 430px) {
+      .main-content {
+        margin-top: 0 !important;
+        padding-top: 100px !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+        padding-bottom: 20px !important;
+      }
+
+      /* FORCE LARGE FLASHCARD SIZE ON MOBILE */
+      .flashcard-container {
+        max-width: 95% !important;
+        margin: 0 auto 0 auto !important;
+      }
+
+      .flashcard-wrapper { 
+        width: 95% !important;
+        height: 340px !important;
+        max-width: 95% !important;
+      }
+
+      .flashcard {
+        padding: 30px !important;
+      }
+
+      /* FORCE LARGE TEXT ON MOBILE */
+      .card-content { 
+        font-size: 20px !important;
+        line-height: 1.5;
+        max-width: 95%;
+      }
+
+      .flashcard-back .card-content { 
+        font-size: 24px !important;
+        font-weight: 600;
+      }
+
+      /* BUTTON GROUP ON MOBILE */
+      .button-group {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        width: 95% !important;
+        max-width: 400px !important;
+        margin: 32px auto 8px auto !important;
+        gap: 8px !important;
+        padding: 0 !important;
+        justify-content: center !important;
+      }
+
+      .members-lounge-btn {
+        width: 60px !important;
+        min-width: 60px !important;
+        max-width: 60px !important;
+        padding: 12px 16px !important;
+        font-size: 20px !important;
+        order: 0 !important;
+        margin-bottom: 0 !important;
+      }
+
+      .members-lounge-btn span:not(.members-arrow) {
+        display: none !important;
+      }
+
+      .members-arrow {
+        margin-right: 0 !important;
+      }
+
+      .rating-btn {
+        width: 60px !important;
+        min-width: 60px !important;
+        max-width: 60px !important;
+        padding: 12px 16px !important;
+        font-size: 20px !important;
+        order: 1 !important;
+      }
+
+      .progress-stats {
+        gap: 12px;
+      }
+
+      .stat-item {
+        font-size: 11px !important;
+      }
+
+      .stat-item span strong {
+        display: inline !important;
+      }
+
+      .stat-item span {
+        font-size: 0 !important;
+      }
+
+      .stat-item span strong {
+        font-size: 11px !important;
+      }
+
+      .stat-icon {
+        width: 16px !important;
+        height: 16px !important;
+        font-size: 10px !important;
+      }
+
+      .progress-title {
+        font-size: 16px !important;
+      }
+
+      .nav-buttons {
+        width: 95%;
+        max-width: 400px;
+        margin: 20px auto !important;
+      }
+
+      .nav-btn {
+        padding: 10px 20px !important;
+        font-size: 12px !important;
+      }
+
+      .progress-header {
+        padding: 10px 16px !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="nav-buttons">
+    <button class="nav-btn" id="prev-btn-top" onclick="previousCard()">← Previous</button>
+    <button class="nav-btn" id="next-btn-top" onclick="nextCard()">Next →</button>
+  </div>
+
+  <div class="progress-header">
+    <h1 class="progress-title">Product of Prime Factors</h1>
+    <div class="progress-stats">
+      <div class="stat-item"><div class="stat-icon mastered">✓</div><span><strong id="mastered-count">0</strong> / 12 mastered</span></div>
+      <div class="stat-item"><div class="stat-icon practice">○</div><span><strong id="practice-count">0</strong> / 12 need more practice</span></div>
+      <div class="stat-item"><div class="stat-icon needs-practice">✗</div><span><strong id="needs-practice-count">0</strong> / 12 needs practice</span></div>
+      <div class="stat-item"><div class="stat-icon not-rated">–</div><span><strong id="not-rated-count">12</strong> / 12 not rated</span></div>
+    </div>
+    <div class="progress-bar-container">
+      <div class="progress-bar-fill" id="progress-fill" style="width: 0%"></div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="flashcard-container">
+      <div class="flashcard-wrapper" id="flashcard">
+        <div class="flashcard flashcard-front">
+          <div class="card-label">Question</div>
+          <div class="card-number" id="card-number-front">1 of 12</div>
+          <div class="card-content" id="question-text">What is meant by the Product of its prime factors?</div>
+          <div class="tap-hint">Tap to reveal answer</div>
+        </div>
+        <div class="flashcard flashcard-back">
+          <div class="card-label">Answer</div>
+          <div class="card-number" id="card-number-back">1 of 12</div>
+          <div class="card-content" id="answer-text">Breaking a number down into the prime numbers that multiply to make it</div>
+          <div class="tap-hint">Tap to see question</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="button-group">
+      <a href="https://gmmmaths.mykajabi.com/lectures" class="members-lounge-btn">
+        <span class="members-arrow">←</span>
+        <span>Members Lounge</span>
+      </a>
+      <button class="rating-btn needs-practice" onclick="rateCard('needs-practice')">✗</button>
+      <button class="rating-btn practice" onclick="rateCard('practice')">○</button>
+      <button class="rating-btn mastered" onclick="rateCard('mastered')">✓</button>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="nav-btn" id="prev-btn" onclick="previousCard()">← Previous</button>
+      <button class="nav-btn" id="next-btn" onclick="nextCard()">Next →</button>
+    </div>
+  </div>
+
+  <script>
+    const flashcards = [
+      { question: "What is meant by the Product of its prime factors?", answer: "Breaking a number down into the prime numbers that multiply to make it" },
+      { question: "Use this factor tree to find the product of its prime factors for 64.", answer: "2 × 2 × 2 × 2 × 2 × 2 or 2⁶" },
+      { question: "Write 220 as a product of its prime factors.", answer: "2 × 2 × 5 × 11 or 2² × 5 × 11" },
+      { question: "Write 78 as a product of its prime factors.", answer: "2 × 3 × 13" },
+      { question: "Write 180 as a product of its prime factors.", answer: "2 × 2 × 3 × 3 × 5 or 2² × 3² × 5" },
+      { question: "Write 126 as a product of its prime factors.", answer: "2 × 3 × 3 × 7 or 2 × 3² × 7" },
+      { question: "Write 36 as a product of its prime factors. Give your answer in index form.", answer: "2² × 3²" },
+      { question: "Write 100 as a product of its prime factors. Give your answer in index form.", answer: "2² × 5²" },
+      { question: "Write 144 as a product of its prime factors. Give your answer in index form.", answer: "2⁴ × 3²" },
+      { question: "Write 80 as a product of its prime factors. Give your answer in index form.", answer: "2⁴ × 5" },
+      { question: "A number is written as 2³ × 5. Work out the number.", answer: "40" },
+      { question: "A number is written as 2² × 3³. Work out the number.", answer: "108" }
+    ]; 
+
+    let currentCard = 0;
+    let ratings = Array(flashcards.length).fill(null);
+
+    const flashcardEl = document.getElementById('flashcard');
+    const questionText = document.getElementById('question-text');
+    const answerText = document.getElementById('answer-text');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+
+    // Touch swipe functionality for mobile/tablet
+    let touchStartX = 0;
+    let touchEndX = 0;
+    let isSwiping = false;
+    let isAnimating = false;
+
+    flashcardEl.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+      isSwiping = true;
+    }, { passive: true });
+
+    flashcardEl.addEventListener('touchend', (e) => {
+      if (!isSwiping) return;
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+      isSwiping = false;
+    }, { passive: true });
+
+    function handleSwipe() {
+      const swipeThreshold = 50;
+      const diff = touchStartX - touchEndX;
+
+      if (Math.abs(diff) > swipeThreshold && !isAnimating) {
+        if (diff > 0) {
+          nextCard();
+        } else {
+          previousCard();
+        }
+      }
+    }
+
+    flashcardEl.addEventListener('click', (e) => {
+      if (window.innerWidth > 1024) {
+        flashcardEl.classList.toggle('flipped');
+      } else {
+        if (!isSwiping && Math.abs(touchStartX - touchEndX) < 10) {
+          flashcardEl.classList.toggle('flipped');
+        }
+      }
+    });
+
+    function updateCard(direction = null) {
+      if (direction === 'next') {
+        isAnimating = true;
+        flashcardEl.classList.add('swipe-left');
+        
+        setTimeout(() => {
+          // Add updating class to hide during content change
+          flashcardEl.classList.add('updating');
+          flashcardEl.classList.remove('swipe-left');
+          flashcardEl.classList.remove('flipped');
+          
+          // Update content while hidden
+          const card = flashcards[currentCard];
+          questionText.textContent = card.question;
+          answerText.textContent = card.answer;
+          document.getElementById('card-number-front').textContent = `${currentCard + 1} of ${flashcards.length}`;
+          document.getElementById('card-number-back').textContent = `${currentCard + 1} of ${flashcards.length}`;
+          
+          // Force reflow to ensure content is updated
+          void flashcardEl.offsetWidth;
+          
+          // Remove updating class and start incoming animation
+          flashcardEl.classList.remove('updating');
+          flashcardEl.classList.add('swipe-in-right');
+          
+          setTimeout(() => {
+            flashcardEl.classList.remove('swipe-in-right');
+            isAnimating = false;
+          }, 350);
+        }, 350);
+      } else if (direction === 'prev') {
+        isAnimating = true;
+        flashcardEl.classList.add('swipe-right');
+        
+        setTimeout(() => {
+          // Add updating class to hide during content change
+          flashcardEl.classList.add('updating');
+          flashcardEl.classList.remove('swipe-right');
+          flashcardEl.classList.remove('flipped');
+          
+          // Update content while hidden
+          const card = flashcards[currentCard];
+          questionText.textContent = card.question;
+          answerText.textContent = card.answer;
+          document.getElementById('card-number-front').textContent = `${currentCard + 1} of ${flashcards.length}`;
+          document.getElementById('card-number-back').textContent = `${currentCard + 1} of ${flashcards.length}`;
+          
+          // Force reflow to ensure content is updated
+          void flashcardEl.offsetWidth;
+          
+          // Remove updating class and start incoming animation
+          flashcardEl.classList.remove('updating');
+          flashcardEl.classList.add('swipe-in-left');
+          
+          setTimeout(() => {
+            flashcardEl.classList.remove('swipe-in-left');
+            isAnimating = false;
+          }, 350);
+        }, 350);
+      } else {
+        const card = flashcards[currentCard];
+        questionText.textContent = card.question;
+        answerText.textContent = card.answer;
+        document.getElementById('card-number-front').textContent = `${currentCard + 1} of ${flashcards.length}`;
+        document.getElementById('card-number-back').textContent = `${currentCard + 1} of ${flashcards.length}`;
+        flashcardEl.classList.remove('flipped');
+      }
+
+      if (prevBtn) prevBtn.disabled = currentCard === 0;
+      if (nextBtn) nextBtn.disabled = currentCard === flashcards.length - 1;
+
+      updateProgress();
+    }
+
+    function rateCard(rating) {
+      ratings[currentCard] = rating;
+      updateProgress();
+      if (currentCard < flashcards.length - 1) {
+        setTimeout(() => nextCard(), 300);
+      }
+    }
+
+    function updateProgress() {
+      const mastered = ratings.filter(r => r === 'mastered').length;
+      const practice = ratings.filter(r => r === 'practice').length;
+      const needsPractice = ratings.filter(r => r === 'needs-practice').length;
+      const notRated = ratings.filter(r => r === null).length;
+
+      document.getElementById('mastered-count').textContent = mastered;
+      document.getElementById('practice-count').textContent = practice;
+      document.getElementById('needs-practice-count').textContent = needsPractice;
+      document.getElementById('not-rated-count').textContent = notRated;
+
+      const totalRated = mastered + practice + needsPractice;
+      const percentage = (totalRated / flashcards.length) * 100;
+      document.getElementById('progress-fill').style.width = percentage + '%';
+    }
+
+    function previousCard() {
+      if (currentCard > 0 && !isAnimating) {
+        currentCard--;
+        updateCard('prev');
+      }
+    }
+
+    function nextCard() {
+      if (currentCard < flashcards.length - 1 && !isAnimating) {
+        currentCard++;
+        updateCard('next');
+      }
+    }
+
+    updateCard();
+  </script>
+</body>
+</html>
