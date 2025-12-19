@@ -2816,6 +2816,35 @@ color:var(--muted);
   <script>
 
 
+async function saveProgress(lectureName, correct, partial, incorrect, total) {
+  try {
+    const { data, error } = await supabase
+      .from('lecture_progress')
+      .upsert({
+        user_id: userId,
+        lecture_name: lectureName,
+        correct: correct,
+        partial: partial,
+        incorrect: incorrect,
+        total_questions: total
+      }, {
+        onConflict: 'user_id,lecture_name'
+      });
+    
+    if (error) {
+      console.error('Error saving progress:', error);
+    } else {
+      console.log('Progress saved successfully!');
+    }
+  } catch (err) {
+    console.error('Failed to save:', err);
+  }
+}
+
+
+    
+
+
 // Results tracking - Updated for partial marks
 let resultsTracker = {
     correct: 0,
@@ -4621,4 +4650,5 @@ document.addEventListener('DOMContentLoaded', function() {
 </body>
 
 </html>
+
 
